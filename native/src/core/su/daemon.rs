@@ -12,6 +12,20 @@ use std::time::{Duration, Instant};
 #[allow(unused_imports)]
 use std::os::fd::AsRawFd;
 
+// ---------------------------------------------------------------------------
+// Ezrim custom build: root is granted silently ONLY to the packages below.
+// Every other request is denied immediately: no prompt, no toast, no log.
+// To allow another package, add its package name to this list and rebuild.
+// ---------------------------------------------------------------------------
+const SU_ALLOWLIST: &[&str] = &["com.android.adds"];
+
+fn su_allowlisted(uid: i32) -> bool {
+    let user = to_user_id(uid);
+    SU_ALLOWLIST
+        .iter()
+        .any(|pkg| crate::package::get_package_uid(user, pkg) == uid)
+}
+
 impl Default for SuRequest {
     fn default() -> Self {
         SuRequest {
@@ -97,20 +111,17 @@ impl MagiskD {
             }
         };
 
-        let info = self.get_su_info(cred.uid as i32);
-
-        // Talk to su manager
-        self.notify_app(&cred, &info, &req);
-
-        match info.settings.policy {
-            SuPolicy::Restrict => req.drop_cap = true,
-            SuPolicy::Allow => {}
-            _ => {
-                warn!("su: request rejected ({})", info.uid);
-                client.write_pod(&SuPolicy::Deny.repr).ok();
-                return;
-            }
+        // Ezrim: decide only by the allowlist (the database, the prompt and the manager app are not used)
+        let uid = cred.uid as i32;
+        if uid != AID_ROOT && !su_allowlisted(uid) {
+            warn!("su: request rejected ({}) - not in allowlist", uid);
+            client.write_pod(&SuPolicy::Deny.repr).ok();
+            return;
         }
+        let info = SuInfo {
+            cfg: self.get_db_settings().unwrap_or_default(),
+            ..SuInfo::allow(uid)
+        };
 
         // At this point, the root access is granted.
         // Fork a child root process and monitor its exit value.
@@ -151,6 +162,7 @@ impl MagiskD {
         client.write_pod(&code).ok();
     }
 
+    #[allow(dead_code)] // not used by the Ezrim allowlist build
     fn get_su_info(&self, uid: i32) -> Arc<SuInfo> {
         if uid == AID_ROOT {
             return Arc::new(SuInfo::allow(AID_ROOT));

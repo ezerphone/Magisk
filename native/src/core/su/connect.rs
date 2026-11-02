@@ -173,6 +173,7 @@ impl MagiskD {
         self.exec_cmd(user, "notify", &extras);
     }
 
+    #[allow(dead_code)] // not used by the Ezrim allowlist build
     pub(super) fn notify_app(&self, cred: &UCred, info: &SuInfo, request: &SuRequest) {
         if !info.settings.log && !info.settings.notify {
             return;
