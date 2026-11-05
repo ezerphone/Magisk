@@ -841,6 +841,11 @@ impl MagiskD {
         self.module_list.set(modules).ok();
     }
 
+    // Ezrim: first boot after a factory reset — no modules, nothing from /data, only su etc. into PATH
+    pub(crate) fn inject_bins_only(&self) {
+        self.apply_modules(&[]);
+    }
+
     fn apply_modules(&self, module_list: &[ModuleInfo]) {
         let mut system = FsNode::new_dir();
 
