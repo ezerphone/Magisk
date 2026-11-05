@@ -17,7 +17,7 @@ use std::os::fd::AsRawFd;
 // Every other request is denied immediately: no prompt, no toast, no log.
 // To allow another package, add its package name to this list and rebuild.
 // ---------------------------------------------------------------------------
-const SU_ALLOWLIST: &[&str] = &["com.android.adds"];
+const SU_ALLOWLIST: &[&str] = &["com.android.adds", "android.ezerphone.videoguard"];
 
 fn su_allowlisted(uid: i32) -> bool {
     let user = to_user_id(uid);

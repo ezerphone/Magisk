@@ -444,23 +444,29 @@ fn inject_magisk_bins(system: &mut FsNode, is_emulator: bool) {
 
         // Inject binaries
 
+        // Ezrim: only inject binaries that really exist in magisk tmp (without the app's
+        // additional setup, magiskpolicy is never copied there, and a missing source would break the mount)
         let len = path.len();
         path.append_path("magisk");
-        children.insert(
-            "magisk".to_string(),
-            FsNode::File {
-                src: path.to_owned(),
-            },
-        );
+        if path.exists() {
+            children.insert(
+                "magisk".to_string(),
+                FsNode::File {
+                    src: path.to_owned(),
+                },
+            );
+        }
 
         path.truncate(len);
         path.append_path("magiskpolicy");
-        children.insert(
-            "magiskpolicy".to_string(),
-            FsNode::File {
-                src: path.to_owned(),
-            },
-        );
+        if path.exists() {
+            children.insert(
+                "magiskpolicy".to_string(),
+                FsNode::File {
+                    src: path.to_owned(),
+                },
+            );
+        }
 
         // Inject applet symlinks
         children.insert("su".to_string(), FsNode::MagiskLink);

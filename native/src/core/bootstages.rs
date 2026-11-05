@@ -75,7 +75,11 @@ impl MagiskD {
 
         let busybox = cstr!(concatcp!(DATABIN, "/busybox"));
         if !busybox.exists() {
-            return false;
+            // Ezrim: there is no Magisk app to finish the install (copy busybox etc. into /data/adb/magisk).
+            // Don't abort: continue without busybox so su is still injected into PATH (/system/bin).
+            // Module scripts need busybox and simply won't run; Ezrim doesn't use modules.
+            info!("* busybox not installed, continuing without it (Ezrim)");
+            return true;
         }
 
         let tmp_bb = buf.append_path(get_magisk_tmp()).append_path(BBPATH);
