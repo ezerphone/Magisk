@@ -9,11 +9,14 @@ mod codegen;
 #[allow(clippy::unwrap_used)]
 fn main() {
     println!("cargo:rerun-if-changed=resetprop/proto/persistent_properties.proto");
-    // Ezrim CI: the generated .rs lives in the source tree (not cached). If a restored build cache
-    // marks this script as fresh but the file is missing, rerun so it is generated again.
-    println!("cargo:rerun-if-changed=resetprop/proto/persistent_properties.rs");
 
     gen_cxx_binding("core-rs");
+
+    // Ezrim CI: the generated files are committed. Generating them here in the source tree raced
+    // between the parallel per-ABI builds (one build read a half-written file). Only generate if missing.
+    if std::path::Path::new("resetprop/proto/persistent_properties.rs").exists() {
+        return;
+    }
 
     let cb = ConfigBuilder::new(
         &["resetprop/proto/persistent_properties.proto"],
