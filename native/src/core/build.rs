@@ -9,6 +9,9 @@ mod codegen;
 #[allow(clippy::unwrap_used)]
 fn main() {
     println!("cargo:rerun-if-changed=resetprop/proto/persistent_properties.proto");
+    // Ezrim CI: the generated .rs lives in the source tree (not cached). If a restored build cache
+    // marks this script as fresh but the file is missing, rerun so it is generated again.
+    println!("cargo:rerun-if-changed=resetprop/proto/persistent_properties.rs");
 
     gen_cxx_binding("core-rs");
 
