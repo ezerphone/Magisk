@@ -122,8 +122,20 @@ impl MagiskD {
 
         // Check secure dir
         if !cstr!(SECURE_DIR).exists() {
-            error!("* {} is not present, abort", SECURE_DIR);
-            return true;
+            // Ezrim: after a factory reset /data/adb doesn't exist yet. Upstream waits for boot-complete
+            // to create it (unsafe on old FDE devices, where /data isn't decrypted yet), so root only
+            // works from the second boot. On FBE (every Android 10+ device) /data is real here: create it now.
+            if get_prop(cstr!("ro.crypto.type")) == "block" {
+                error!("* {} is not present, abort", SECURE_DIR);
+                return true;
+            }
+            info!("* {} is not present, creating it (Ezrim)", SECURE_DIR);
+            cstr!(SECURE_DIR).mkdir(0o700).log_ok();
+            restorecon();
+            if !cstr!(SECURE_DIR).exists() {
+                error!("* {} could not be created, abort", SECURE_DIR);
+                return true;
+            }
         }
 
         self.prune_su_access();
